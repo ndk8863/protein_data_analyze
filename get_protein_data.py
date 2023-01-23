@@ -21,8 +21,11 @@ def remove_extra_string_on_item_name(ItemNameSeries):
     result = pd.Series(temp_data_list)
     return result
 
-APP_ID = '1067554345477542293'
-secret ='92fa5786d838475b2d0d5bbe3f36b0829f9c76c8'
+
+apikey_json_open = open('my_apikey.json','r')
+apikey_json_load = json.load(apikey_json_open)
+APP_ID = apikey_json_load['rakuten_api_key']['api_id']
+secret =apikey_json_load['rakuten_api_key']['secret']
 URL = "https://app.rakuten.co.jp/services/api/IchibaItem/Search/20170706"
 search_keyword = "プロテイン"
 ng_keyword = ""
