@@ -1,67 +1,19 @@
-import requests
-import numpy as np
-import pandas as pd
-import json
+from ProductSearchAPIGateway import RakutenItemGateway
+# import CloudStorageConnecter as c
+import os
 import datetime
-import re
 
-# 商品名から分析に不要な文字列を削除する
-# params ItemNameSeries Series型 
-# return result Series型 文字列を修正したobjectを返す
-def remove_extra_string_on_item_name(ItemNameSeries):
-    item_name_list = ItemNameSeries.tolist()
-    temp_data =""
-    temp_data_list = []
-    for i in range(0,len(item_name_list)):
-        temp_data = item_name_list[i]
-        temp_data = re.sub(r'\【.*?\】','',temp_data)
-        temp_data = re.sub(r'\＼.*?\／','',temp_data)
-        temp_data_list.append(temp_data)
-        
-    result = pd.Series(temp_data_list)
-    return result
+if __name__ == "__main__":
+    r = RakutenItemGateway('my_apikey.json')
+    r.test()
 
+    # request_url = "https://app.rakuten.co.jp/services/api/IchibaItem/Search/20170706"
+    search_keyword = "プロテイン"
+    ng_keyword = ""
 
-apikey_json_open = open('my_apikey.json','r')
-apikey_json_load = json.load(apikey_json_open)
-APP_ID = apikey_json_load['rakuten_api_key']['api_id']
-secret =apikey_json_load['rakuten_api_key']['secret']
-URL = "https://app.rakuten.co.jp/services/api/IchibaItem/Search/20170706"
-search_keyword = "プロテイン"
-ng_keyword = ""
-page = 0
+    r.search_params_setter(search_keyword,ng_keyword)
+    max_page_count = 3
 
-search_params = {
-    "format" : "json",
-    "keyword" : search_keyword,
-#     "NGKeyword":ng_keyword,
-    "applicationId" : APP_ID,
-    "availability" : 1,
-    "hasReviewFlag":1,
-    "hits" : 30,
-    "page" : page,
-    "field":1,
-    "availability":1,
-    "sort" : "-reviewCount",
-    "postageFlag":1
-}
-# hitsは最大30件まで
-# pageを増やすとどうなるか→複数ページにわたる検索結果を取得可能
-# →大量の商品情報を取得できる
-
-# 商品情報をリストで取得
-extracted_item_list = []
-max_page = 100
-for page in range(1,max_page + 1):
-    search_params['page'] = page
-    print(page)
-    response = requests.get(URL,search_params)
-    result = response.json()
-    if ('error_description' in result) is True:
-        print("continueします")
-        continue
-    
-    #resultから必要な情報を抜き出した後dictを作る
     item_key = [
         'itemCode',
         'itemName',
@@ -87,81 +39,76 @@ for page in range(1,max_page + 1):
         'shopOfTheYearFlag',
         'shipOverseasFlag'
     ]
-    
-    for i in range(0,len(result['Items'])):
-        insert_item_row = {}
-        item = result['Items'][i]['Item']
-        for key,value in item.items():
-            if key in item_key:
-                insert_item_row[key] = value
-        extracted_item_list.append(insert_item_row.copy())
 
+    df = r.request_api(max_page_count,item_key)
 
-extracted_date = datetime.datetime.now()
-extracted_date = extracted_date.date()        
+    # print(df)
 
-df = pd.DataFrame(extracted_item_list)
-df['extracted_date'] = extracted_date
+    new_index = [
+        'itemCode',
+        'itemName',
+        'catchcopy',
+        'itemCaption',
+        'itemPrice',
+        'itemUrl',
+        'mediumImageUrls',
+        'shopCode',
+        'shopName',
+        'shopUrl',
+        'reviewAverage',
+        'reviewCount',
+        'pointRate',
+        'startTime',
+        'endTime',
+        'asurakuFlag',
+        'asurakuArea',
+        'giftFlag',
+        'taxFlag',
+        'postageFlag',
+        'creditCardFlag',
+        'shopOfTheYearFlag',
+        'shipOverseasFlag',
+        'extracted_date'
+        ]
 
-df = df.reindex(columns=[
-    'itemCode',
-    'itemName',
-    'catchcopy',
-    'itemCaption',
-    'itemPrice',
-    'itemUrl',
-    'mediumImageUrls',
-    'shopCode',
-    'shopName',
-    'shopUrl',
-    'reviewAverage',
-    'reviewCount',
-    'pointRate',
-    'startTime',
-    'endTime',
-    'asurakuFlag',
-    'asurakuArea',
-    'giftFlag',
-    'taxFlag',
-    'postageFlag',
-    'creditCardFlag',
-    'shopOfTheYearFlag',
-    'shipOverseasFlag',
-    'extracted_date'
-    ])
-df.columns = [
-    '商品コード',
-    '商品名',
-    'キャッチコピー',
-    '説明文',
-    '価格',
-    '商品URL',
-    '商品画像',
-    '店舗コード',
-    '店舗名',
-    '店舗URL',
-    'レビュー平均',
-    'レビュー数',
-    'ポイント率',
-    'タイムセール開始時刻',
-    'タイムセール終了時刻',
-    'あす楽対象フラグ',
-    'あす楽配送対象地域',
-    'ギフト対応',
-    '税込み/税抜き',
-    '送料込/送料別',
-    'クレジットカード対応',
-    'ショップオブザイヤーフラグ',
-    '海外配送の対応',
-    '抽出日'
-    ]
-index = df.index + 1
+    new_columns_name =  [
+        '商品コード',
+        '商品名',
+        'キャッチコピー',
+        '説明文',
+        '価格',
+        '商品URL',
+        '商品画像',
+        '店舗コード',
+        '店舗名',
+        '店舗URL',
+        'レビュー平均',
+        'レビュー数',
+        'ポイント率',
+        'タイムセール開始時刻',
+        'タイムセール終了時刻',
+        'あす楽対象フラグ',
+        'あす楽配送対象地域',
+        'ギフト対応',
+        '税込み/税抜き',
+        '送料込/送料別',
+        'クレジットカード対応',
+        'ショップオブザイヤーフラグ',
+        '海外配送の対応',
+        '抽出日'
+        ]
 
-# 商品名から余計な文字を取り除く
-df['商品名'] = remove_extra_string_on_item_name(df['商品名'])
-print(df.count)
-# CSVで保存
+    df = r.fix_df(df,new_index,new_columns_name)
+    r.save_to_cloud_storage(df)
 
-df.to_csv(str(extracted_date) + "rakuten_protein_data.csv")
-
-
+    # extracted_date = datetime.datetime.now()
+    # extracted_date = extracted_date.date()
+    # file_name = str(extracted_date) + "rakuten_protein_data.json"
+    # # df.to_csv(file_name)
+    # csv_data = df.to_csv()
+    # print(csv_data)
+    # print(df)
+    # df.to_json(os.path.join(os.getcwd(),file_name),orient='index',force_ascii=False)
+    # extracted_json_data = df.to_json(orient='index')
+    # debug
+    # print(extracted_json_data)
