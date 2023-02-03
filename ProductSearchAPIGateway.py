@@ -34,9 +34,6 @@ class RakutenItemGateway:
         self.secret = apikey_json_load['rakuten_api_key']['secret']
         self.url = apikey_json_load['rakuten_api_key']['url']
 
-    def test(self):
-        print("hogehogetest")
-
     def remove_extra_string_on_item_name(self,ItemNameSeries):
         """
         商品名から分析に不要な文字列を削除する
@@ -124,8 +121,9 @@ class RakutenItemGateway:
         """
 
         extracted_date = datetime.datetime.now()
-        extracted_date = extracted_date.date()        
-        df['extracted_date'] = extracted_date
+        extracted_date = extracted_date.date()       
+        df['extracted_date'] = extracted_date.strftime('%Y-%m-%d')
+
 
         df = df.reindex(columns=new_index)
         df.columns = new_columns_name
@@ -135,7 +133,7 @@ class RakutenItemGateway:
         return df
 
 
-    def save_to_cloud_storage(self,df):
+    def save_to_cloud_storage_as_csv(self,df):
         """
         データフレームをcsvの形に変換し、
         クラウドストレージに保存する
@@ -150,9 +148,32 @@ class RakutenItemGateway:
 
         file_name = str(extracted_date) + "rakuten_protein_data.csv"
         csv_data = df.to_csv()
-        print(csv_data)
+        # print(csv_data)
         bucket_name = "protein_datalake999"
 
-        json_file_path = 'ecdataanalyze-d4e132f74654.json'
+        json_file_path = 'local_apikey/gcp_key.json'
         c = StorageGateway(json_file_path)
-        c.upload_csv_to_bucket(file_name,csv_data,bucket_name)
+        c.upload_string_to_bucket(file_name,csv_data,bucket_name)
+
+    def save_to_cloud_storage_as_json(self,df):
+        """
+        データフレームをcsvの形に変換し、
+        クラウドストレージに保存する
+        args: 
+            params df DataFrame型/保存するdf
+        returns:
+            無し
+        """
+
+        extracted_date = datetime.datetime.now()
+        extracted_date = extracted_date.date()
+
+        print(df)
+        json_data = df.to_json(orient='index',force_ascii=False)
+        print(json_data)
+        file_name = str(extracted_date) + "rakuten_protein_data.json"
+        bucket_name = "protein_datalake999"
+
+        json_file_path = 'local_apikey/gcp_key.json'
+        c = StorageGateway(json_file_path)
+        c.upload_string_to_bucket(file_name,json_data,bucket_name)

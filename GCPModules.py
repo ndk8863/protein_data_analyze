@@ -4,6 +4,7 @@
 
 import os
 from google.cloud import storage
+from google.cloud import bigquery
 
 
 class StorageGateway:
@@ -49,12 +50,12 @@ class StorageGateway:
             return False
 
 
-    def upload_csv_to_bucket(self,blob_name,csv_data,bucket_name):
+    def upload_string_to_bucket(self,blob_name,string_data,bucket_name):
         """
         バケットにcsvデータをアップロードする
         args: 
             blob_name string型 バケットに保存する際のblob名
-            csv_data string型 アップロードしたいcsvのデータ
+            string_data string型 アップロードしたい文字列のデータ
             bucket_name string型 保存したいバケットの名前
         
         returns:
@@ -63,15 +64,15 @@ class StorageGateway:
         try:
             my_bucket = self.storage_client.get_bucket(bucket_name)
             my_blob = my_bucket.blob(blob_name)
-            my_blob.upload_from_string(csv_data)
+            my_blob.upload_from_string(string_data,content_type='application/json')
             return True
         except Exception as e:
             print(e)
             return False
 
-    def download_csv_to_bucket(self,blob_name,bucket_name):
+    def download_string_from_bucket(self,blob_name,bucket_name):
         """
-        バケットからcsvデータをダウンロードする
+        バケットから文字列データをダウンロードする
         args: 
             blob_name string型 バケットに保存する際のblob名
             csv_data string型 アップロードしたいcsvのデータ
@@ -83,10 +84,30 @@ class StorageGateway:
         try:
             my_bucket = self.storage_client.get_bucket(bucket_name)
             my_blob = my_bucket.blob(blob_name)
-            csv_data = my_blob.download_as_string(csv_data)
-            print(csv_data)
-            return csv_data
+            string_data = my_blob.download_as_string()
+            # print(string_data)
+            return string_data
         except Exception as e:
             print(e)
             return False
 
+def insert_to_bigquery(table_id,data):
+    '''
+      指定したtable_idのテーブルに、dataを追加する
+      args:
+        params table_id string型 データを追加したいテーブルのid
+        params data dict型 追加したいデータ
+      returns
+        無し
+    '''
+    client = bigquery.Client()
+
+    # rows_to_insert = [
+    #     data,
+    # ]
+    table = client.get_table(table_id)
+    errors = client.insert_rows_json(table, data, row_ids=[None] * len(data))
+    if errors == []:
+      print("New rows have been added.")
+    else:
+      print("Encountered errors while inserting rows: {}".format(errors))
