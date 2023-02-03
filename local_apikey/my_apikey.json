@@ -1,7 +1,0 @@
-{
-    "rakuten_api_key":{
-            "api_id":1067554345477542293,
-            "secret":"92fa5786d838475b2d0d5bbe3f36b0829f9c76c8",
-            "url":"https://app.rakuten.co.jp/services/api/IchibaItem/Search/20170706"
-    }
-}
